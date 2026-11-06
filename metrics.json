@@ -1,0 +1,13 @@
+{
+  "best_model": "Logistic_Regression",
+  "accuracy": 0.6208,
+  "f1_score": 0.3546,
+  "recall": 0.463,
+  "precision": 0.2874,
+  "roc_auc": 0.5772,
+  "models_evaluated": [
+    "Logistic_Regression",
+    "Random_Forest",
+    "Gradient_Boosting"
+  ]
+}

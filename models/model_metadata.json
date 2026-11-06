@@ -1,0 +1,82 @@
+{
+  "model_name": "Logistic_Regression",
+  "version": "1.0.0",
+  "trained_at": "2026-11-06T15:23:57.981794",
+  "student_name": "Velpuri Bhanu Teja",
+  "student_reg_number": "231FA04E85",
+  "dataset_rows": 1200,
+  "train_samples": 960,
+  "test_samples": 240,
+  "imputer_stats": {
+    "price_median": 14176.5,
+    "discount_median": 23.25,
+    "rating_median": 3.6,
+    "payment_mode": "Card",
+    "expected_delivery_median": 7.0,
+    "actual_delivery_median": 8.0
+  },
+  "features": [
+    "Product_Price_INR",
+    "Discount_Percent",
+    "Expected_Delivery_Days",
+    "Actual_Delivery_Days",
+    "Customer_Rating_PreOrder",
+    "Previous_Returns",
+    "Previous_Orders",
+    "delivery_delay",
+    "customer_return_frequency",
+    "effective_price",
+    "is_delayed",
+    "return_risk_score",
+    "Product_Category",
+    "Payment_Method",
+    "Damaged_Package_Flag",
+    "Package_Size",
+    "Promotion_Active"
+  ],
+  "performance": {
+    "model_name": "Logistic_Regression",
+    "accuracy": 0.6208,
+    "precision": 0.2874,
+    "recall": 0.463,
+    "f1_score": 0.3546,
+    "roc_auc": 0.5772,
+    "confusion_matrix": [
+      [
+        124,
+        62
+      ],
+      [
+        29,
+        25
+      ]
+    ],
+    "classification_report": {
+      "0": {
+        "precision": 0.8104575163398693,
+        "recall": 0.6666666666666666,
+        "f1-score": 0.7315634218289085,
+        "support": 186.0
+      },
+      "1": {
+        "precision": 0.28735632183908044,
+        "recall": 0.46296296296296297,
+        "f1-score": 0.3546099290780142,
+        "support": 54.0
+      },
+      "accuracy": 0.6208333333333333,
+      "macro avg": {
+        "precision": 0.5489069190894749,
+        "recall": 0.5648148148148148,
+        "f1-score": 0.5430866754534613,
+        "support": 240.0
+      },
+      "weighted avg": {
+        "precision": 0.6927597475771918,
+        "recall": 0.6208333333333333,
+        "f1-score": 0.6467488859599573,
+        "support": 240.0
+      }
+    }
+  }
+}

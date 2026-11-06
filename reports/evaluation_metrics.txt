@@ -1,0 +1,32 @@
+=================================================================
+  E-COMMERCE PRODUCT RETURN PREDICTION - MODEL EVALUATION REPORT
+=================================================================
+Generated on: 2026-11-06 15:23:57
+Student: Velpuri Bhanu Teja | Reg No: 231FA04E85
+
+--- Logistic_Regression ---
+  Accuracy  : 0.6208
+  Precision : 0.2874
+  Recall    : 0.4630
+  F1-Score  : 0.3546
+  ROC-AUC   : 0.5772
+  Confusion Matrix: [[124, 62], [29, 25]]
+
+--- Random_Forest ---
+  Accuracy  : 0.7250
+  Precision : 0.3500
+  Recall    : 0.2593
+  F1-Score  : 0.2979
+  ROC-AUC   : 0.5398
+  Confusion Matrix: [[160, 26], [40, 14]]
+
+--- Gradient_Boosting ---
+  Accuracy  : 0.7458
+  Precision : 0.2308
+  Recall    : 0.0556
+  F1-Score  : 0.0896
+  ROC-AUC   : 0.5367
+  Confusion Matrix: [[176, 10], [51, 3]]
+
+WINNING MODEL: Logistic_Regression
+=================================================================

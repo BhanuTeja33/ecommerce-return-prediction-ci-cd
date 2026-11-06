@@ -1,0 +1,165 @@
+name: E-Commerce Product Return Prediction CI-CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  ml-ci-pipeline:
+    name: ML CI - Validate, Train, Quality Gate & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Upgrade pip and Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Code Syntax & Validation Check
+        run: |
+          python -m py_compile app.py train_model.py quality_gate.py src/*.py
+
+      - name: Execute Model Training and Preprocessing Pipeline
+        run: |
+          python train_model.py
+
+      - name: Enforce MLOps Quality Gate
+        run: |
+          python quality_gate.py
+
+      - name: Run Automated Unit and API Tests
+        run: |
+          pytest -v --tb=short
+
+      - name: Archive Model Artifacts and Evaluation Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: return-prediction-artifacts
+          path: |
+            models/
+            reports/
+            metrics.json
+            data/reference_data.csv
+          retention-days: 14
+
+  docker-build-publish-ghcr:
+    name: Docker Build, In-CI Smoke Test & Publish to GHCR
+    needs: ml-ci-pipeline
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Download Model Artifacts from CI Job
+        uses: actions/download-artifact@v4
+        with:
+          name: return-prediction-artifacts
+          path: .
+
+      - name: Log in to GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set Lowercase Image Repository Name
+        id: repo-name
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/ecommerce-return-prediction
+          IMAGE_NAME=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+          echo "image=$IMAGE_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build Docker Image
+        run: |
+          docker build \
+            --tag ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --tag ${{ env.IMAGE_NAME }}:latest \
+            .
+
+      - name: Start Docker Container for In-CI Verification
+        run: |
+          docker run -d \
+            --name return-prediction-api \
+            -p 8000:8000 \
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Wait for API Health Readiness
+        run: |
+          for i in {1..20}; do
+            if curl --fail --silent http://localhost:8000/health; then
+              echo -e "\nAPI container is healthy and ready."
+              exit 0
+            fi
+            echo "Waiting for container API to start... attempt $i"
+            sleep 2
+          done
+          echo "Health check timed out. Showing container logs:"
+          docker logs return-prediction-api
+          exit 1
+
+      - name: Smoke Test Live Predict Endpoint
+        run: |
+          RESPONSE=$(curl --fail --silent --show-error \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d '{
+              "Order_ID": "CI_SMOKE_TEST",
+              "Product_Category": "Electronics",
+              "Product_Price_INR": 22055.97,
+              "Discount_Percent": 21.6,
+              "Expected_Delivery_Days": 9,
+              "Actual_Delivery_Days": 12,
+              "Customer_Rating_PreOrder": 4.4,
+              "Previous_Returns": 4,
+              "Previous_Orders": 12,
+              "Payment_Method": "Card",
+              "Damaged_Package_Flag": "Yes",
+              "Package_Size": "Large",
+              "Promotion_Active": "Yes"
+            }' \
+            http://localhost:8000/predict)
+          echo "Live prediction response: $RESPONSE"
+          echo "$RESPONSE" | grep -q '"prediction"'
+
+      - name: Capture Container Logs
+        if: always()
+        run: |
+          docker logs return-prediction-api || true
+          docker rm -f return-prediction-api || true
+
+      - name: Push Docker Image to GHCR
+        run: |
+          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.IMAGE_NAME }}:latest
+
+      - name: Emit Workflow Summary
+        run: |
+          echo "### 🚀 CI/CD Pipeline Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Student:** Velpuri Bhanu Teja (231FA04E85)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Model:** Logistic Regression (Balanced Classification Pipeline)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Published GHCR Image:** \`${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** All Quality Gates, Unit Tests, Container Verification & GHCR Publish PASSED" >> $GITHUB_STEP_SUMMARY
