@@ -134,6 +134,7 @@ def root():
             "register_number": "231FA04E85",
             "github_profile": "https://github.com/BhanuTeja33"
         },
+        "live_url": "https://deviant-controversy-scroll-input.trycloudflare.com",
         "endpoints": {
             "health": "/health",
             "predict": "/predict",
@@ -153,7 +154,8 @@ def health_check():
         "model_name": model_metadata.get("model_name", "Logistic_Regression"),
         "model_version": "1.1.0",
         "timestamp": datetime.now().isoformat(),
-        "student": "Velpuri Bhanu Teja (231FA04E85)"
+        "student": "Velpuri Bhanu Teja (231FA04E85)",
+        "live_url": "https://deviant-controversy-scroll-input.trycloudflare.com"
     }
 
 
