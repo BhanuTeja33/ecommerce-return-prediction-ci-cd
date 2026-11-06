@@ -8,7 +8,11 @@ import shutil
 import tempfile
 
 ZIP_NAME = "231FA04E85_MLOps_Internal.zip"
-REPORT_FINAL = "231FA04E85_MLOps_Internal_Lab_Report_Final.docx"
+REPORT_SOURCES = [
+    "231FA04E85_MLOps_Internal_Project_Document.docx",
+    "231FA04E85_MLOps_Internal_Lab_Report_Final.docx",
+    "231FA04E85_MLOps_Internal_Lab_Report.docx"
+]
 REPORT_STANDARD_NAME = "231FA04E85_MLOps_Internal_Lab_Report.docx"
 
 EXCLUDE_DIRS = {".git", ".pytest_cache", "__pycache__", "venv", ".cloudflared"}
@@ -24,26 +28,34 @@ def package_project():
         os.remove(ZIP_NAME)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Copy the latest finalized docx to the canonical report name in tmp
+        # Pick the newest/largest report file
+        best_report_src = None
+        for cand in REPORT_SOURCES:
+            if os.path.exists(cand):
+                best_report_src = cand
+                break
+        
         canonical_report = os.path.join(tmpdir, REPORT_STANDARD_NAME)
-        if os.path.exists(REPORT_FINAL):
-            shutil.copyfile(REPORT_FINAL, canonical_report)
+        if best_report_src:
+            shutil.copyfile(best_report_src, canonical_report)
+            print(f"Copied {best_report_src} -> {canonical_report}")
 
         with zipfile.ZipFile(ZIP_NAME, "w", zipfile.ZIP_DEFLATED) as zipf:
-            # Add canonical report
+            # Add canonical report as top-level docx
             if os.path.exists(canonical_report):
                 zipf.write(canonical_report, arcname=REPORT_STANDARD_NAME)
-                print(f"Added {REPORT_STANDARD_NAME} (from {REPORT_FINAL})")
+                print(f"Added {REPORT_STANDARD_NAME} to ZIP archive")
 
             # Add all project files
             for root, dirs, files in os.walk("."):
-                # Filter out unwanted directories in-place
                 dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS and not d.startswith(".")]
                 
                 for f in files:
                     if f in EXCLUDE_FILES or f.endswith(".zip") or f.endswith(".exe"):
                         continue
-                    # Skip the locked docx if any, since we wrote the updated one above
+                    # Skip any duplicate docx to keep zip clean
+                    if f.endswith(".docx") and f != REPORT_STANDARD_NAME:
+                        continue
                     if f == REPORT_STANDARD_NAME:
                         continue
                     
