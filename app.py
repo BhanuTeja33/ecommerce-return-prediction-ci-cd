@@ -63,7 +63,7 @@ app = FastAPI(
         "Production ML inference API predicting whether e-commerce orders "
         "will be Returned or Not Returned based on customer, product, and delivery attributes."
     ),
-    version="1.0.0",
+    version="1.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan
@@ -105,7 +105,9 @@ class PredictionResponse(BaseModel):
     delivery_delay_days: int
     customer_return_frequency: float
     effective_price_inr: float
+    return_reason_summary: str
     model_name: str
+    model_version: str
     timestamp: str
 
 
@@ -126,7 +128,7 @@ def root():
     return {
         "service": "E-Commerce Product Return Prediction API",
         "status": "online",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "student": {
             "name": "Velpuri Bhanu Teja",
             "register_number": "231FA04E85",
@@ -149,10 +151,25 @@ def health_check():
         "status": "healthy" if is_ready else "degraded",
         "model_loaded": is_ready,
         "model_name": model_metadata.get("model_name", "Logistic_Regression"),
-        "model_version": model_metadata.get("version", "1.0.0"),
+        "model_version": "1.1.0",
         "timestamp": datetime.now().isoformat(),
         "student": "Velpuri Bhanu Teja (231FA04E85)"
     }
+
+
+def _generate_reason(prob: float, delay: int, freq: float, damaged: str) -> str:
+    reasons = []
+    if damaged.lower() == "yes":
+        reasons.append("Damaged package reported")
+    if delay > 0:
+        reasons.append(f"Delivery delayed by {delay} day(s)")
+    if freq >= 0.25:
+        reasons.append(f"High historical return rate ({freq:.1%})")
+    if prob >= 0.50 and not reasons:
+        reasons.append("Model identified composite risk from product and rating patterns")
+    if prob < 0.50:
+        reasons.append("Order parameters indicate low return risk")
+    return "; ".join(reasons)
 
 
 def _process_prediction(item: OrderInput) -> PredictionResponse:
@@ -188,6 +205,7 @@ def _process_prediction(item: OrderInput) -> PredictionResponse:
     delay = int(engineered_df["delivery_delay"].iloc[0])
     freq = round(float(engineered_df["customer_return_frequency"].iloc[0]), 4)
     eff_price = round(float(engineered_df["effective_price"].iloc[0]), 2)
+    reason = _generate_reason(prob_float, delay, freq, item.Damaged_Package_Flag)
 
     return PredictionResponse(
         order_id=item.Order_ID or "N/A",
@@ -198,7 +216,9 @@ def _process_prediction(item: OrderInput) -> PredictionResponse:
         delivery_delay_days=delay,
         customer_return_frequency=freq,
         effective_price_inr=eff_price,
+        return_reason_summary=reason,
         model_name=model_metadata.get("model_name", "Logistic_Regression"),
+        model_version="1.1.0",
         timestamp=datetime.now().isoformat()
     )
 

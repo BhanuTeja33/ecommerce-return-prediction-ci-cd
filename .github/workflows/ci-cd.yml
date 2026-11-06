@@ -17,6 +17,9 @@ jobs:
   ml-ci-pipeline:
     name: ML CI - Validate, Train, Quality Gate & Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout Source Code
@@ -65,6 +68,9 @@ jobs:
     name: Docker Build, In-CI Smoke Test & Publish to GHCR
     needs: ml-ci-pipeline
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     if: github.ref == 'refs/heads/main'
 
     steps:
@@ -160,6 +166,7 @@ jobs:
           echo "### 🚀 CI/CD Pipeline Execution Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Student:** Velpuri Bhanu Teja (231FA04E85)" >> $GITHUB_STEP_SUMMARY
           echo "- **Model:** Logistic Regression (Balanced Classification Pipeline)" >> $GITHUB_STEP_SUMMARY
+          echo "- **API Version:** \`1.1.0\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit SHA:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Published GHCR Image:** \`${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** All Quality Gates, Unit Tests, Container Verification & GHCR Publish PASSED" >> $GITHUB_STEP_SUMMARY
